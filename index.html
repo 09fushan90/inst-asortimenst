@@ -408,12 +408,61 @@
 <h3>Окремий відділ для зміни цін</h3>
 <div class="bulk-price-box">
   <div class="bulk-price-head"><div class="bulk-price-title">Підвищити ціну обраним товарам</div><div id="bulkPriceSelectedInfo" style="color:#66736b;font-weight:900">Обрано: 0</div></div>
-  <div class="bulk-price-controls">
-    <input id="bulkPriceValue" type="number" min="0" step="1" placeholder="На скільки підвищити, наприклад 200">
-    <button type="button" class="big-btn secondary" style="background:#101512;color:#fff" onclick="selectAllOfficeProductsForBulk(true)">Обрати всі</button>
-    <button type="button" class="big-btn secondary" style="background:#101512;color:#fff" onclick="selectAllOfficeProductsForBulk(false)">Зняти вибір</button>
-    <button type="button" class="big-btn primary" onclick="applyBulkPriceToSelected()">Підвищити ціну</button>
-  </div>
+<div class="bulk-price-controls">
+
+  <!-- Зміна ціни на суму -->
+  <input
+    id="bulkPriceValue"
+    type="number"
+    min="0"
+    step="1"
+    placeholder="На скільки підвищити, наприклад 200"
+  >
+
+  <!-- Встановити точну ціну -->
+  <input
+    id="bulkExactPriceValue"
+    type="number"
+    min="0"
+    step="1"
+    placeholder="Встановити точну ціну, наприклад 1500"
+  >
+
+  <button
+    type="button"
+    class="big-btn secondary"
+    style="background:#101512;color:#fff"
+    onclick="selectAllOfficeProductsForBulk(true)"
+  >
+    Обрати всі
+  </button>
+
+  <button
+    type="button"
+    class="big-btn secondary"
+    style="background:#101512;color:#fff"
+    onclick="selectAllOfficeProductsForBulk(false)"
+  >
+    Зняти вибір
+  </button>
+
+  <button
+    type="button"
+    class="big-btn primary"
+    onclick="applyExactPriceToSelected()"
+  >
+    Встановити ціну
+  </button>
+
+  <button
+    type="button"
+    class="big-btn primary"
+    onclick="applyBulkPriceToSelected()"
+  >
+    Підвищити ціну
+  </button>
+
+</div>
   <div style="margin-top:10px;color:#66736b;font-weight:850;line-height:1.4">Приклад: обрав товари 1000, 2000 і 3000, написав 200 — стане 1200, 2200 і 3200.</div>
 </div>
 <h3>Обери товари для підвищення ціни</h3><div class="office-list" id="officePriceProductsList"></div>
@@ -1753,6 +1802,104 @@ async function applyBulkPriceToSelected(){
       p.discountPercent='';
       changed++;
     }
+
+// ===== Встановити точну ціну обраним товарам =====
+async function applyExactPriceToSelected(){
+
+  const exactPrice = toNum(
+    $('bulkExactPriceValue')
+      ? $('bulkExactPriceValue').value
+      : ''
+  );
+
+  if(exactPrice <= 0){
+    showInfo(
+      'Не змінено',
+      'Напиши точну ціну, яку потрібно встановити. Наприклад: 1500'
+    );
+    return;
+  }
+
+  const ids = [...bulkSelectedProductIds];
+
+  if(!ids.length){
+    showInfo(
+      'Не обрано товари',
+      'Постав галочки біля товарів, яким потрібно встановити ціну.'
+    );
+    return;
+  }
+
+  const updates = {};
+  let changed = 0;
+
+  products.forEach((p,i)=>{
+
+    const id = bulkProductDbId(p,i);
+
+    if(ids.includes(id)){
+
+      const dbId = text(p._dbKey || p.id || id);
+
+      if(!dbId) return;
+
+      const newPrice = String(Math.round(exactPrice));
+
+      // Встановлюємо точну ціну
+      updates['catalog/products/' + dbId + '/price'] = newPrice;
+
+      // Скидаємо стару знижку
+      updates['catalog/products/' + dbId + '/discountPrice'] = '';
+      updates['catalog/products/' + dbId + '/discountPercent'] = '';
+
+      // Оновлюємо товар локально
+      p.price = newPrice;
+      p.discountPrice = '';
+      p.discountPercent = '';
+
+      changed++;
+    }
+  });
+
+  if(!changed){
+    showInfo(
+      'Не знайдено',
+      'Не вдалося знайти вибрані товари для зміни ціни.'
+    );
+    return;
+  }
+
+  try{
+
+    await db.ref().update(updates);
+
+    // Очищаємо вибір
+    bulkSelectedProductIds.clear();
+
+    // Очищаємо поле
+    if($('bulkExactPriceValue')){
+      $('bulkExactPriceValue').value = '';
+    }
+
+    build();
+    renderOfficeList();
+    renderOfficeAdProducts();
+
+    showToast(
+      'Ціну '+money(exactPrice)+' встановлено для '+changed+' товарів'
+    );
+
+  }catch(e){
+
+    console.error(e);
+
+    showInfo(
+      'Помилка бази',
+      'Не вдалося встановити ціни у Firebase. Перевір правила бази або чи ти увійшов як адмін.'
+    );
+
+  }
+}
   });
   if(!changed){showInfo('Не знайдено','У вибраних товарах не знайдено нормальну поточну ціну. Перевір ціни і спробуй ще раз.');return}
   try{
