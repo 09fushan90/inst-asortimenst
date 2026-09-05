@@ -408,61 +408,12 @@
 <h3>Окремий відділ для зміни цін</h3>
 <div class="bulk-price-box">
   <div class="bulk-price-head"><div class="bulk-price-title">Підвищити ціну обраним товарам</div><div id="bulkPriceSelectedInfo" style="color:#66736b;font-weight:900">Обрано: 0</div></div>
-<div class="bulk-price-controls">
-
-  <!-- Зміна ціни на суму -->
-  <input
-    id="bulkPriceValue"
-    type="text"
-    min="0"
-    step="1"
-    placeholder="Підвищити ціну"
-  >
-
-  <!-- Встановити точну ціну -->
-  <input
-    id="bulkExactPriceValue"
-    type="text"
-    min="0"
-    step="1"
-    placeholder="Точна ціна"
-  >
-
-  <button
-    type="button"
-    class="big-btn secondary"
-    style="background:#101512;color:#fff"
-    onclick="selectAllOfficeProductsForBulk(true)"
-  >
-    Обрати всі
-  </button>
-
-  <button
-    type="button"
-    class="big-btn secondary"
-    style="background:#101512;color:#fff"
-    onclick="selectAllOfficeProductsForBulk(false)"
-  >
-    Зняти вибір
-  </button>
-
-  <button
-    type="button"
-    class="big-btn primary"
-    onclick="applyExactPriceToSelected()"
-  >
-    Встановити ціну
-  </button>
-
-  <button
-    type="button"
-    class="big-btn primary"
-    onclick="applyBulkPriceToSelected()"
-  >
-    Підвищити ціну
-  </button>
-
-</div>
+  <div class="bulk-price-controls">
+    <input id="bulkPriceValue" type="number" min="0" step="1" placeholder="На скільки підвищити, наприклад 200">
+    <button type="button" class="big-btn secondary" style="background:#101512;color:#fff" onclick="selectAllOfficeProductsForBulk(true)">Обрати всі</button>
+    <button type="button" class="big-btn secondary" style="background:#101512;color:#fff" onclick="selectAllOfficeProductsForBulk(false)">Зняти вибір</button>
+    <button type="button" class="big-btn primary" onclick="applyBulkPriceToSelected()">Підвищити ціну</button>
+  </div>
   <div style="margin-top:10px;color:#66736b;font-weight:850;line-height:1.4">Приклад: обрав товари 1000, 2000 і 3000, написав 200 — стане 1200, 2200 і 3200.</div>
 </div>
 <h3>Обери товари для підвищення ціни</h3><div class="office-list" id="officePriceProductsList"></div>
@@ -1782,180 +1733,27 @@ function selectAllOfficeProductsForBulk(flag){
 }
 async function applyBulkPriceToSelected(){
   const addAmount=toNum($('bulkPriceValue')?$('bulkPriceValue').value:'');
-  
-  if(addAmount<=0){
-    showInfo(
-      'Не змінено',
-      'Напиши суму, на яку треба підвищити ціну. Наприклад: 200.'
-    );
-    return;
-  }
-
+  if(addAmount<=0){showInfo('Не змінено','Напиши суму, на яку треба підвищити ціну. Наприклад: 200.');return}
   const ids=[...bulkSelectedProductIds];
-
-  if(!ids.length){
-    showInfo(
-      'Не обрано товари',
-      'Постав галочки біля товарів, яким треба підвищити ціну.'
-    );
-    return;
-  }
-
+  if(!ids.length){showInfo('Не обрано товари','Постав галочки біля товарів, яким треба підвищити ціну.');return}
   const updates={};
   let changed=0;
-
   products.forEach((p,i)=>{
     const id=bulkProductDbId(p,i);
-
     if(ids.includes(id)){
       const dbId=text(p._dbKey||p.id||id);
       const currentPrice=toNum(pPrice(p)||pBasePrice(p));
-
       if(currentPrice<=0)return;
-
       const newPrice=String(Math.round(currentPrice+addAmount));
-
       updates['catalog/products/'+dbId+'/price']=newPrice;
       updates['catalog/products/'+dbId+'/discountPrice']='';
       updates['catalog/products/'+dbId+'/discountPercent']='';
-
       p.price=newPrice;
       p.discountPrice='';
       p.discountPercent='';
-
       changed++;
     }
   });
-
-  if(!changed){
-    showInfo(
-      'Не знайдено',
-      'У вибраних товарах не знайдено нормальну поточну ціну.'
-    );
-    return;
-  }
-
-  try{
-    await db.ref().update(updates);
-
-    bulkSelectedProductIds.clear();
-
-    if($('bulkPriceValue')){
-      $('bulkPriceValue').value='';
-    }
-
-    build();
-    renderOfficeList();
-    renderOfficeAdProducts();
-
-    showToast(
-      'Ціну підвищено на '+money(addAmount)+' у '+changed+' товарів'
-    );
-
-  }catch(e){
-    console.error(e);
-
-    showInfo(
-      'Помилка бази',
-      'Не вдалося змінити ціни у Firebase. Перевір правила бази або чи ти увійшов як адмін.'
-    );
-  }
-}
-
-
-// =====================================================
-// ВСТАНОВИТИ ТОЧНУ ЦІНУ
-// =====================================================
-
-async function applyExactPriceToSelected(){
-
-  const exactPrice=toNum(
-    $('bulkExactPriceValue')
-      ? $('bulkExactPriceValue').value
-      : ''
-  );
-
-  if(exactPrice<=0){
-    showInfo(
-      'Не змінено',
-      'Напиши точну ціну, наприклад 1500.'
-    );
-    return;
-  }
-
-  const ids=[...bulkSelectedProductIds];
-
-  if(!ids.length){
-    showInfo(
-      'Не обрано товари',
-      'Постав галочки біля товарів, яким потрібно встановити ціну.'
-    );
-    return;
-  }
-
-  const updates={};
-  let changed=0;
-
-  products.forEach((p,i)=>{
-
-    const id=bulkProductDbId(p,i);
-
-    if(!ids.includes(id))return;
-
-    const dbId=text(p._dbKey||p.id||id);
-
-    if(!dbId)return;
-
-    const newPrice=String(Math.round(exactPrice));
-
-    updates['catalog/products/'+dbId+'/price']=newPrice;
-    updates['catalog/products/'+dbId+'/discountPrice']='';
-    updates['catalog/products/'+dbId+'/discountPercent']='';
-
-    p.price=newPrice;
-    p.discountPrice='';
-    p.discountPercent='';
-
-    changed++;
-  });
-
-  if(!changed){
-    showInfo(
-      'Не знайдено',
-      'Не вдалося знайти вибрані товари для зміни ціни.'
-    );
-    return;
-  }
-
-  try{
-
-    await db.ref().update(updates);
-
-    bulkSelectedProductIds.clear();
-
-    if($('bulkExactPriceValue')){
-      $('bulkExactPriceValue').value='';
-    }
-
-    build();
-    renderOfficeList();
-    renderOfficeAdProducts();
-
-    showToast(
-      'Ціну '+money(exactPrice)+' встановлено для '+changed+' товарів'
-    );
-
-  }catch(e){
-
-    console.error(e);
-
-    showInfo(
-      'Помилка бази',
-      'Не вдалося встановити ціни у Firebase. Перевір правила бази або чи ти увійшов як адмін.'
-    );
-  }
-
-
   if(!changed){showInfo('Не знайдено','У вибраних товарах не знайдено нормальну поточну ціну. Перевір ціни і спробуй ще раз.');return}
   try{
     await db.ref().update(updates);
