@@ -1782,45 +1782,108 @@ function selectAllOfficeProductsForBulk(flag){
 }
 async function applyBulkPriceToSelected(){
   const addAmount=toNum($('bulkPriceValue')?$('bulkPriceValue').value:'');
-  if(addAmount<=0){showInfo('Не змінено','Напиши суму, на яку треба підвищити ціну. Наприклад: 200.');return}
+  
+  if(addAmount<=0){
+    showInfo(
+      'Не змінено',
+      'Напиши суму, на яку треба підвищити ціну. Наприклад: 200.'
+    );
+    return;
+  }
+
   const ids=[...bulkSelectedProductIds];
-  if(!ids.length){showInfo('Не обрано товари','Постав галочки біля товарів, яким треба підвищити ціну.');return}
+
+  if(!ids.length){
+    showInfo(
+      'Не обрано товари',
+      'Постав галочки біля товарів, яким треба підвищити ціну.'
+    );
+    return;
+  }
+
   const updates={};
   let changed=0;
+
   products.forEach((p,i)=>{
     const id=bulkProductDbId(p,i);
+
     if(ids.includes(id)){
       const dbId=text(p._dbKey||p.id||id);
       const currentPrice=toNum(pPrice(p)||pBasePrice(p));
+
       if(currentPrice<=0)return;
+
       const newPrice=String(Math.round(currentPrice+addAmount));
+
       updates['catalog/products/'+dbId+'/price']=newPrice;
       updates['catalog/products/'+dbId+'/discountPrice']='';
       updates['catalog/products/'+dbId+'/discountPercent']='';
+
       p.price=newPrice;
       p.discountPrice='';
       p.discountPercent='';
+
       changed++;
     }
+  });
 
-// ===== Встановити точну ціну обраним товарам =====
+  if(!changed){
+    showInfo(
+      'Не знайдено',
+      'У вибраних товарах не знайдено нормальну поточну ціну.'
+    );
+    return;
+  }
+
+  try{
+    await db.ref().update(updates);
+
+    bulkSelectedProductIds.clear();
+
+    if($('bulkPriceValue')){
+      $('bulkPriceValue').value='';
+    }
+
+    build();
+    renderOfficeList();
+    renderOfficeAdProducts();
+
+    showToast(
+      'Ціну підвищено на '+money(addAmount)+' у '+changed+' товарів'
+    );
+
+  }catch(e){
+    console.error(e);
+
+    showInfo(
+      'Помилка бази',
+      'Не вдалося змінити ціни у Firebase. Перевір правила бази або чи ти увійшов як адмін.'
+    );
+  }
+}
+
+
+// =====================================================
+// ВСТАНОВИТИ ТОЧНУ ЦІНУ
+// =====================================================
+
 async function applyExactPriceToSelected(){
 
-  const exactPrice = toNum(
+  const exactPrice=toNum(
     $('bulkExactPriceValue')
       ? $('bulkExactPriceValue').value
       : ''
   );
 
-  if(exactPrice <= 0){
+  if(exactPrice<=0){
     showInfo(
       'Не змінено',
-      'Напиши точну ціну, яку потрібно встановити. Наприклад: 1500'
+      'Напиши точну ціну, наприклад 1500.'
     );
     return;
   }
 
-  const ids = [...bulkSelectedProductIds];
+  const ids=[...bulkSelectedProductIds];
 
   if(!ids.length){
     showInfo(
@@ -1830,35 +1893,30 @@ async function applyExactPriceToSelected(){
     return;
   }
 
-  const updates = {};
-  let changed = 0;
+  const updates={};
+  let changed=0;
 
   products.forEach((p,i)=>{
 
-    const id = bulkProductDbId(p,i);
+    const id=bulkProductDbId(p,i);
 
-    if(ids.includes(id)){
+    if(!ids.includes(id))return;
 
-      const dbId = text(p._dbKey || p.id || id);
+    const dbId=text(p._dbKey||p.id||id);
 
-      if(!dbId) return;
+    if(!dbId)return;
 
-      const newPrice = String(Math.round(exactPrice));
+    const newPrice=String(Math.round(exactPrice));
 
-      // Встановлюємо точну ціну
-      updates['catalog/products/' + dbId + '/price'] = newPrice;
+    updates['catalog/products/'+dbId+'/price']=newPrice;
+    updates['catalog/products/'+dbId+'/discountPrice']='';
+    updates['catalog/products/'+dbId+'/discountPercent']='';
 
-      // Скидаємо стару знижку
-      updates['catalog/products/' + dbId + '/discountPrice'] = '';
-      updates['catalog/products/' + dbId + '/discountPercent'] = '';
+    p.price=newPrice;
+    p.discountPrice='';
+    p.discountPercent='';
 
-      // Оновлюємо товар локально
-      p.price = newPrice;
-      p.discountPrice = '';
-      p.discountPercent = '';
-
-      changed++;
-    }
+    changed++;
   });
 
   if(!changed){
@@ -1873,12 +1931,10 @@ async function applyExactPriceToSelected(){
 
     await db.ref().update(updates);
 
-    // Очищаємо вибір
     bulkSelectedProductIds.clear();
 
-    // Очищаємо поле
     if($('bulkExactPriceValue')){
-      $('bulkExactPriceValue').value = '';
+      $('bulkExactPriceValue').value='';
     }
 
     build();
@@ -1897,10 +1953,9 @@ async function applyExactPriceToSelected(){
       'Помилка бази',
       'Не вдалося встановити ціни у Firebase. Перевір правила бази або чи ти увійшов як адмін.'
     );
-
   }
-}
-  });
+
+
   if(!changed){showInfo('Не знайдено','У вибраних товарах не знайдено нормальну поточну ціну. Перевір ціни і спробуй ще раз.');return}
   try{
     await db.ref().update(updates);
