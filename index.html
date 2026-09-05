@@ -407,16 +407,17 @@
 <section class="office-section" id="officeSectionPrices">
 <h3>Окремий відділ для зміни цін</h3>
 <div class="bulk-price-box">
-  <div class="bulk-price-head"><div class="bulk-price-title">Підвищити ціну обраним товарам</div><div id="bulkPriceSelectedInfo" style="color:#66736b;font-weight:900">Обрано: 0</div></div>
+  <div class="bulk-price-head"><div class="bulk-price-title">Підвищити ціну або поставити мітку обраним товарам</div><div id="bulkPriceSelectedInfo" style="color:#66736b;font-weight:900">Обрано: 0</div></div>
   <div class="bulk-price-controls">
-    <input id="bulkPriceValue" type="text" min="НЕ СЕЗОН" step="1" placeholder="На скільки підвищити, наприклад 200">
+    <input id="bulkPriceValue" type="text" placeholder="Число (200) — підняти ціну, або текст (Не сезон) — поставити мітку">
     <button type="button" class="big-btn secondary" style="background:#101512;color:#fff" onclick="selectAllOfficeProductsForBulk(true)">Обрати всі</button>
     <button type="button" class="big-btn secondary" style="background:#101512;color:#fff" onclick="selectAllOfficeProductsForBulk(false)">Зняти вибір</button>
-    <button type="button" class="big-btn primary" onclick="applyBulkPriceToSelected()">Підвищити ціну</button>
+    <button type="button" class="big-btn primary" onclick="applyBulkPriceToSelected()">Застосувати</button>
+    <button type="button" class="big-btn secondary" style="background:#ffecec;color:#b00000" onclick="clearBulkLabelForSelected()">Прибрати мітку</button>
   </div>
-  <div style="margin-top:10px;color:#66736b;font-weight:850;line-height:1.4">Приклад: обрав товари 1000, 2000 і 3000, написав 200 — стане 1200, 2200 і 3200.</div>
+  <div style="margin-top:10px;color:#66736b;font-weight:850;line-height:1.4">Приклад ціни: обрав товари 1000, 2000 і 3000, написав 200 — стане 1200, 2200 і 3200.<br>Приклад мітки: обрав товари, написав «Не сезон» — на цих товарах замість «InSort»/знижки з’явиться мітка «Не сезон».</div>
 </div>
-<h3>Обери товари для підвищення ціни</h3><div class="office-list" id="officePriceProductsList"></div>
+<h3>Обери товари для зміни ціни або мітки</h3><div class="office-list" id="officePriceProductsList"></div>
 </section>
 <section class="office-section" id="officeSectionExcel">
 <h3>Excel таблиця товарів</h3>
@@ -615,7 +616,7 @@ let currentAdIndex=0, adSliderTimer=null;
 function safeCartLoad(){try{const saved=JSON.parse(localStorage.getItem('insort_cart_v2')||'[]');return Array.isArray(saved)?saved.filter(Boolean):[]}catch(e){return []}}
 function safeSavedLoad(){try{const saved=JSON.parse(localStorage.getItem('insort_saved_v1')||'[]');return Array.isArray(saved)?saved.map(String):[]}catch(e){return []}}
 const $=id=>document.getElementById(id); const text=v=>String(v??'').trim(); const low=v=>text(v).toLowerCase(); const money=v=>{if(!v&&v!==0)return 'Ціну уточнюйте'; const n=String(v).replace(/[^0-9.,]/g,'').replace(',','.'); return isNaN(parseFloat(n))?String(v):parseFloat(n).toLocaleString('uk-UA')+' грн'}; const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
-function pName(p){return text(p.title||p.name||p.productName||p.model||'Товар')} function pArticle(p){return text(p.article||p.sku||p.code||p.articul||p.vendorCode||p.vendor_code||p.productCode||p.product_code||p.modelCode||'')} function pCat(p){return text(p.category||p.subCategory||p.subcategory||'')} function pMain(p){return text(p.mainCategory||p.main||p.type||'')} function pDesc(p){return text(p.description||p.desc||p.info||p.characteristics||'Опис товару можна додати в адмінці.')} function toNum(v){const n=parseFloat(String(v??'').replace(/[^0-9.,]/g,'').replace(',','.'));return Number.isFinite(n)?n:0} function pDiscountPercent(p){return Math.max(0,Math.min(99,toNum(p.discountPercent||p.discount||p.salePercent||0)))} function pBasePrice(p){return p.price||p.cost||p.oldPrice||p.originalPrice||''} function pManualDiscountPrice(p){return p.discountPrice||p.newPrice||p.salePrice||p.sale||''} function pIsDiscount(p){return pDiscountPercent(p)>0||toNum(pManualDiscountPrice(p))>0} function pPrice(p){const manual=pManualDiscountPrice(p); if(toNum(manual)>0)return manual; const base=pBasePrice(p);const d=pDiscountPercent(p);if(d&&toNum(base)>0)return Math.round(toNum(base)*(100-d)/100);return base||''} function pOld(p){if(pIsDiscount(p)&&toNum(pBasePrice(p))>0)return pBasePrice(p); return p.oldPrice||p.originalPrice||''} function pIsHit(p){return p.isHit===true||p.hit===true||p.bestSeller===true||String(p.isHit||p.hit||p.bestSeller||'').toLowerCase()==='true'}
+function pName(p){return text(p.title||p.name||p.productName||p.model||'Товар')} function pArticle(p){return text(p.article||p.sku||p.code||p.articul||p.vendorCode||p.vendor_code||p.productCode||p.product_code||p.modelCode||'')} function pCat(p){return text(p.category||p.subCategory||p.subcategory||'')} function pMain(p){return text(p.mainCategory||p.main||p.type||'')} function pDesc(p){return text(p.description||p.desc||p.info||p.characteristics||'Опис товару можна додати в адмінці.')} function toNum(v){const n=parseFloat(String(v??'').replace(/[^0-9.,]/g,'').replace(',','.'));return Number.isFinite(n)?n:0} function pDiscountPercent(p){return Math.max(0,Math.min(99,toNum(p.discountPercent||p.discount||p.salePercent||0)))} function pBasePrice(p){return p.price||p.cost||p.oldPrice||p.originalPrice||''} function pManualDiscountPrice(p){return p.discountPrice||p.newPrice||p.salePrice||p.sale||''} function pIsDiscount(p){return pDiscountPercent(p)>0||toNum(pManualDiscountPrice(p))>0} function pPrice(p){const manual=pManualDiscountPrice(p); if(toNum(manual)>0)return manual; const base=pBasePrice(p);const d=pDiscountPercent(p);if(d&&toNum(base)>0)return Math.round(toNum(base)*(100-d)/100);return base||''} function pOld(p){if(pIsDiscount(p)&&toNum(pBasePrice(p))>0)return pBasePrice(p); return p.oldPrice||p.originalPrice||''} function pIsHit(p){return p.isHit===true||p.hit===true||p.bestSeller===true||String(p.isHit||p.hit||p.bestSeller||'').toLowerCase()==='true'} function pLabel(p){return text(p.label||'')}
 
 function isValidPhotoUrl(url){
   url=(typeof url==='string')?url.trim():'';
@@ -902,7 +903,7 @@ function card(p,i){
     + '<div class="product-body">'
     + '<div class="product-name" title="'+esc(pName(p))+'">'+esc(pName(p))+'</div>'
     + '<div class="product-meta">'+esc((pArticle(p)?'Арт: '+pArticle(p)+' • ':'')+(pMain(p)||pCat(p)||'Каталог InSort'))+'</div>'
-    + '<div class="price-row"><div><div class="price '+(out?'stock-out':'')+'">'+(out?'Немає в асортименті':esc(money(pPrice(p))))+'</div>'+(old?'<div class="old-price">'+esc(money(old))+'</div>':'')+'</div>'+(pIsDiscount(p)?'<span class="badge">'+(pDiscountPercent(p)?'-'+esc(pDiscountPercent(p))+'%':'Знижка')+'</span>':'<span class="badge">InSort</span>')+'</div>'
+    + '<div class="price-row"><div><div class="price '+(out?'stock-out':'')+'">'+(out?'Немає в асортименті':esc(money(pPrice(p))))+'</div>'+(old?'<div class="old-price">'+esc(money(old))+'</div>':'')+'</div>'+(pLabel(p)?'<span class="badge" style="background:#fff3e0;color:#b06a00">'+esc(pLabel(p))+'</span>':(pIsDiscount(p)?'<span class="badge">'+(pDiscountPercent(p)?'-'+esc(pDiscountPercent(p))+'%':'Знижка')+'</span>':'<span class="badge">InSort</span>'))+'</div>'
     + '<div class="card-actions">'
     + '<button type="button" class="view-btn" onclick="event.preventDefault();event.stopPropagation();orderDirect('+i+')">Замовити одразу</button>'
     + '<button type="button" class="cart-btn order-btn '+(inCart?'added':'')+'" onclick="event.preventDefault();event.stopPropagation();addCart('+i+', this)">'+(inCart?'У кошику':'В кошик')+'</button>'
@@ -1732,38 +1733,90 @@ function selectAllOfficeProductsForBulk(flag){
   showToast(flag?'Обрано всі товари':'Вибір очищено');
 }
 async function applyBulkPriceToSelected(){
-  const addAmount=toNum($('bulkPriceValue')?$('bulkPriceValue').value:'');
-  if(addAmount<=0){showInfo('Не змінено','Напиши суму, на яку треба підвищити ціну. Наприклад: 200.');return}
+  const raw=text($('bulkPriceValue')?$('bulkPriceValue').value:'');
+  if(!raw){showInfo('Не змінено','Напиши суму (наприклад 200), щоб підняти ціну, або текст (наприклад Не сезон), щоб поставити мітку.');return}
   const ids=[...bulkSelectedProductIds];
-  if(!ids.length){showInfo('Не обрано товари','Постав галочки біля товарів, яким треба підвищити ціну.');return}
+  if(!ids.length){showInfo('Не обрано товари','Постав галочки біля товарів, з якими треба щось зробити.');return}
+  const addAmount=toNum(raw);
+  const isPriceMode=addAmount>0 && /^[\d\s.,]+$/.test(raw);
+  if(isPriceMode){
+    const updates={};
+    let changed=0;
+    products.forEach((p,i)=>{
+      const id=bulkProductDbId(p,i);
+      if(ids.includes(id)){
+        const dbId=text(p._dbKey||p.id||id);
+        const currentPrice=toNum(pPrice(p)||pBasePrice(p));
+        if(currentPrice<=0)return;
+        const newPrice=String(Math.round(currentPrice+addAmount));
+        updates['catalog/products/'+dbId+'/price']=newPrice;
+        updates['catalog/products/'+dbId+'/discountPrice']='';
+        updates['catalog/products/'+dbId+'/discountPercent']='';
+        p.price=newPrice;
+        p.discountPrice='';
+        p.discountPercent='';
+        changed++;
+      }
+    });
+    if(!changed){showInfo('Не знайдено','У вибраних товарах не знайдено нормальну поточну ціну. Перевір ціни і спробуй ще раз.');return}
+    try{
+      await db.ref().update(updates);
+      bulkSelectedProductIds.clear();
+      if($('bulkPriceValue'))$('bulkPriceValue').value='';
+      build();renderOfficeList();renderOfficeAdProducts();
+      showToast('Ціну підвищено на '+money(addAmount)+' у '+changed+' товарів');
+    }catch(e){
+      console.error(e);
+      showInfo('Помилка бази','Не вдалося змінити ціни у Firebase. Перевір правила бази або чи ти увійшов як адмін.');
+    }
+    return;
+  }
+  const labelText=raw;
   const updates={};
   let changed=0;
   products.forEach((p,i)=>{
     const id=bulkProductDbId(p,i);
     if(ids.includes(id)){
       const dbId=text(p._dbKey||p.id||id);
-      const currentPrice=toNum(pPrice(p)||pBasePrice(p));
-      if(currentPrice<=0)return;
-      const newPrice=String(Math.round(currentPrice+addAmount));
-      updates['catalog/products/'+dbId+'/price']=newPrice;
-      updates['catalog/products/'+dbId+'/discountPrice']='';
-      updates['catalog/products/'+dbId+'/discountPercent']='';
-      p.price=newPrice;
-      p.discountPrice='';
-      p.discountPercent='';
+      updates['catalog/products/'+dbId+'/label']=labelText;
+      p.label=labelText;
       changed++;
     }
   });
-  if(!changed){showInfo('Не знайдено','У вибраних товарах не знайдено нормальну поточну ціну. Перевір ціни і спробуй ще раз.');return}
+  if(!changed){showInfo('Не знайдено','Не вдалося знайти вибрані товари в базі.');return}
   try{
     await db.ref().update(updates);
     bulkSelectedProductIds.clear();
     if($('bulkPriceValue'))$('bulkPriceValue').value='';
     build();renderOfficeList();renderOfficeAdProducts();
-    showToast('Ціну підвищено на '+money(addAmount)+' у '+changed+' товарів');
+    showToast('Мітку «'+labelText+'» поставлено на '+changed+' товарів');
   }catch(e){
     console.error(e);
-    showInfo('Помилка бази','Не вдалося змінити ціни у Firebase. Перевір правила бази або чи ти увійшов як адмін.');
+    showInfo('Помилка бази','Не вдалося зберегти мітку у Firebase. Перевір правила бази або чи ти увійшов як адмін.');
+  }
+}
+async function clearBulkLabelForSelected(){
+  const ids=[...bulkSelectedProductIds];
+  if(!ids.length){showInfo('Не обрано товари','Постав галочки біля товарів, з яких треба прибрати мітку.');return}
+  const updates={};
+  let changed=0;
+  products.forEach((p,i)=>{
+    const id=bulkProductDbId(p,i);
+    if(ids.includes(id)){
+      const dbId=text(p._dbKey||p.id||id);
+      updates['catalog/products/'+dbId+'/label']='';
+      p.label='';
+      changed++;
+    }
+  });
+  if(!changed){showInfo('Не знайдено','Не вдалося знайти вибрані товари в базі.');return}
+  try{
+    await db.ref().update(updates);
+    build();renderOfficeList();renderOfficeAdProducts();
+    showToast('Мітку прибрано у '+changed+' товарів');
+  }catch(e){
+    console.error(e);
+    showInfo('Помилка бази','Не вдалося прибрати мітку у Firebase. Перевір правила бази або чи ти увійшов як адмін.');
   }
 }
 
@@ -1780,7 +1833,7 @@ function officeProductRowHtml(p,i){
   const thumb=img?'<img src="'+esc(img)+'" onerror="this.remove();this.parentElement.textContent=&quot;🛠️&quot;">':'🛠️';
   const bid=bulkProductDbId(p,i);
   const checked=bulkSelectedProductIds.has(bid);
-  return '<div class="office-item '+(checked?'bulk-selected':'')+'" data-bulk-id="'+esc(bid)+'"><label style="display:flex;align-items:center;justify-content:center"><input class="bulk-select-check" type="checkbox" '+(checked?'checked':'')+' onclick="event.stopPropagation()" onchange="toggleOfficeBulkProduct(this.closest(&quot;.office-item&quot;).dataset.bulkId,this.checked)"></label><div class="office-thumb">'+thumb+'</div><div><div class="office-item-title">'+esc(pName(p))+'</div><div class="office-item-meta">'+esc((pArticle(p)?'Арт: '+pArticle(p)+' • ':'')+([pMain(p),pCat(p)].filter(Boolean).join(' / ')||'Без категорії'))+' • '+esc(money(pPrice(p)))+(pIsHit(p)?' • ХІТ':'')+(pIsDiscount(p)?' • ЗНИЖКА':'')+'</div></div><div class="office-actions" style="margin:0"><button class="cart-btn" onclick="editOfficeProduct('+i+')">Змінити</button><button class="cart-btn danger-btn" onclick="deleteOfficeProduct('+i+')">Видалити</button></div></div>';
+  return '<div class="office-item '+(checked?'bulk-selected':'')+'" data-bulk-id="'+esc(bid)+'"><label style="display:flex;align-items:center;justify-content:center"><input class="bulk-select-check" type="checkbox" '+(checked?'checked':'')+' onclick="event.stopPropagation()" onchange="toggleOfficeBulkProduct(this.closest(&quot;.office-item&quot;).dataset.bulkId,this.checked)"></label><div class="office-thumb">'+thumb+'</div><div><div class="office-item-title">'+esc(pName(p))+'</div><div class="office-item-meta">'+esc((pArticle(p)?'Арт: '+pArticle(p)+' • ':'')+([pMain(p),pCat(p)].filter(Boolean).join(' / ')||'Без категорії'))+' • '+esc(money(pPrice(p)))+(pIsHit(p)?' • ХІТ':'')+(pIsDiscount(p)?' • ЗНИЖКА':'')+(pLabel(p)?' • Мітка: '+esc(pLabel(p)):'')+'</div></div><div class="office-actions" style="margin:0"><button class="cart-btn" onclick="editOfficeProduct('+i+')">Змінити</button><button class="cart-btn danger-btn" onclick="deleteOfficeProduct('+i+')">Видалити</button></div></div>';
 }
 function clearOfficeProductSearch(){
   const input=$('officeProductSearch');
