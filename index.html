@@ -801,7 +801,7 @@ function updateDynamicSeo(){
             "brand":{"@type":"Brand","name":"Procraft"},
             "category":pMain(p)||pCat(p)||"Електроінструменти",
             "description":pDesc(p),
-            "image":(pImages(p)[0]||"https://insort.kyiv.ua/logo.png.jpg"),
+            "image":(productImages(p)[0]||"https://insort.kyiv.ua/logo.png.jpg"),
             "sku":getProductId(p,i),
             "offers":{
               "@type":"Offer",
@@ -809,7 +809,42 @@ function updateDynamicSeo(){
               "price":String(pPrice(p)).replace(/[^0-9.]/g,'')||"0",
               "availability":(text(p.stockStatus||p.status).toLowerCase().includes('немає')||p.outOfStock)?"https://schema.org/OutOfStock":"https://schema.org/InStock",
               "itemCondition":"https://schema.org/NewCondition",
-              "url":"https://insort.kyiv.ua/"
+              "url":"https://insort.kyiv.ua/",
+              "hasMerchantReturnPolicy":{
+                "@type":"MerchantReturnPolicy",
+                "applicableCountry":"UA",
+                "returnPolicyCategory":"https://schema.org/MerchantReturnFiniteReturnWindow",
+                "merchantReturnDays":14,
+                "returnMethod":"https://schema.org/ReturnByMail",
+                "returnFees":"https://schema.org/FreeReturn"
+              },
+              "shippingDetails":{
+                "@type":"OfferShippingDetails",
+                "shippingRate":{
+                  "@type":"MonetaryAmount",
+                  "value":"0",
+                  "currency":"UAH"
+                },
+                "shippingDestination":{
+                  "@type":"DefinedRegion",
+                  "addressCountry":"UA"
+                },
+                "deliveryTime":{
+                  "@type":"ShippingDeliveryTime",
+                  "handlingTime":{
+                    "@type":"QuantitativeValue",
+                    "minValue":0,
+                    "maxValue":1,
+                    "unitCode":"DAY"
+                  },
+                  "transitTime":{
+                    "@type":"QuantitativeValue",
+                    "minValue":1,
+                    "maxValue":5,
+                    "unitCode":"DAY"
+                  }
+                }
+              }
             }
           }
         }))
